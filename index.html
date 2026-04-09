@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resume Parser — AI Powered</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --mirage:      #16232A;
+      --orange:      #FF5B04;
+      --sea:         #075056;
+      --sand:        #E4EEF0;
+      --mirage-80:   #16232Acc;
+      --sea-light:   #0a6b73;
+      --orange-dark: #cc4803;
+      --text-on-dark:#E4EEF0;
+      --text-muted:  #8aacb0;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--mirage);
+      color: var(--sand);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.4rem 3rem;
+      border-bottom: 1px solid rgba(228,238,240,0.08);
+      position: sticky; top: 0;
+      background: var(--mirage);
+      z-index: 100;
+    }
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.4rem;
+      letter-spacing: -0.03em;
+      display: flex; align-items: center; gap: .6rem;
+    }
+    .logo-dot { width:10px; height:10px; border-radius:50%; background: var(--orange); display:inline-block; }
+    .badge {
+      font-size:.7rem; font-weight:600; letter-spacing:.12em;
+      text-transform:uppercase; background: var(--sea);
+      color: var(--sand); padding:.25rem .7rem; border-radius:100px;
+    }
+
+    /* ── Hero Upload Zone ── */
+    main { max-width: 1100px; margin: 0 auto; padding: 3rem 2rem 6rem; }
+
+    .hero-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2.4rem, 5vw, 4.2rem);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      margin-bottom: 1rem;
+    }
+    .hero-title span { color: var(--orange); }
+
+    .hero-sub {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      font-weight: 300;
+      max-width: 480px;
+      margin-bottom: 3rem;
+      line-height: 1.65;
+    }
+
+    /* ── Drop Zone ── */
+    #dropzone {
+      border: 2px dashed rgba(7,80,86,.6);
+      border-radius: 20px;
+      background: rgba(7,80,86,.07);
+      padding: 4rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all .25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    #dropzone::before {
+      content:'';
+      position:absolute; inset:0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(255,91,4,.06) 0%, transparent 70%);
+      pointer-events:none;
+    }
+    #dropzone.drag-over {
+      border-color: var(--orange);
+      background: rgba(255,91,4,.07);
+      transform: scale(1.01);
+    }
+    .drop-icon {
+      font-size: 3.2rem; margin-bottom: 1rem;
+      display:block;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    .drop-title { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:700; margin-bottom:.4rem; }
+    .drop-sub { color:var(--text-muted); font-size:.9rem; }
+    .drop-sub strong { color: var(--orange); }
+
+    #file-input { display:none; }
+
+    .btn-upload {
+      margin-top: 1.8rem;
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: var(--orange);
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: .9rem;
+      letter-spacing: .04em; text-transform: uppercase;
+      padding: .8rem 2rem;
+      border-radius: 100px; border: none; cursor: pointer;
+      transition: background .2s, transform .15s;
+    }
+    .btn-upload:hover { background: var(--orange-dark); transform: translateY(-2px); }
+
+    /* ── Progress / Loading ── */
+    #loading {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+      padding: 3rem;
+    }
+    .spinner {
+      width:52px; height:52px; border-radius:50%;
+      border: 4px solid rgba(255,91,4,.2);
+      border-top-color: var(--orange);
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .loading-label { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; color:var(--orange); }
+    .loading-steps { color:var(--text-muted); font-size:.85rem; }
+
+    /* ── Results ── */
+    #results { display:none; }
+
+    .result-header {
+      display:flex; align-items:center; justify-content:space-between;
+      flex-wrap:wrap; gap:1rem;
+      margin-bottom: 2.5rem;
+    }
+    .result-title {
+      font-family:'Syne',sans-serif;
+      font-size:1.8rem; font-weight:800; letter-spacing:-.03em;
+    }
+
+    .score-chips { display:flex; gap:.6rem; flex-wrap:wrap; }
+    .chip {
+      font-size:.78rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+      padding:.35rem .9rem; border-radius:100px;
+    }
+    .chip-orange { background:rgba(255,91,4,.15); color:var(--orange); border:1px solid rgba(255,91,4,.3); }
+    .chip-sea    { background:rgba(7,80,86,.4);   color:#7ee8ef;        border:1px solid rgba(7,80,86,.7); }
+    .chip-sand   { background:rgba(228,238,240,.08); color:var(--sand);  border:1px solid rgba(228,238,240,.2); }
+
+    .btn-reset {
+      background:transparent; color:var(--text-muted);
+      border:1px solid rgba(228,238,240,.2);
+      font-family:'Syne',sans-serif; font-weight:600; font-size:.8rem;
+      letter-spacing:.06em; text-transform:uppercase;
+      padding:.5rem 1.2rem; border-radius:100px; cursor:pointer;
+      transition: all .2s;
+    }
+    .btn-reset:hover { color:var(--sand); border-color:var(--sand); }
+
+    /* Grid sections */
+    .sections-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    @media(max-width:700px){ .sections-grid{ grid-template-columns:1fr; } }
+    .section-full { grid-column: 1 / -1; }
+
+    .card {
+      background: rgba(7,80,86,.1);
+      border: 1px solid rgba(7,80,86,.3);
+      border-radius: 16px;
+      padding: 1.6rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::after {
+      content:'';
+      position:absolute; top:0; left:0; right:0; height:2px;
+      background: linear-gradient(90deg, var(--sea), var(--orange));
+      opacity:.5;
+    }
+    .card-title {
+      font-family:'Syne',sans-serif;
+      font-size:.75rem; font-weight:700;
+      letter-spacing:.12em; text-transform:uppercase;
+      color:var(--orange);
+      margin-bottom:1.1rem;
+      display:flex; align-items:center; gap:.4rem;
+    }
+
+    /* Personal Info */
+    .personal-grid { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
+    .info-row { font-size:.88rem; }
+    .info-label { color:var(--text-muted); font-size:.75rem; margin-bottom:.1rem; }
+    .info-value { font-weight:500; word-break:break-all; }
+
+    /* Experience / Education */
+    .exp-item { margin-bottom:1.4rem; padding-bottom:1.4rem; border-bottom:1px solid rgba(228,238,240,.07); }
+    .exp-item:last-child { border-bottom:none; margin-bottom:0; padding-bottom:0; }
+    .exp-title { font-family:'Syne',sans-serif; font-weight:700; font-size:1rem; }
+    .exp-company { color: var(--orange); font-size:.9rem; font-weight:500; margin:.15rem 0; }
+    .exp-dates { color:var(--text-muted); font-size:.78rem; margin-bottom:.6rem; }
+    .exp-list { list-style:none; padding:0; }
+    .exp-list li {
+      font-size:.82rem; color:rgba(228,238,240,.8);
+      padding:.2rem 0 .2rem 1rem;
+      position:relative;
+      line-height:1.5;
+    }
+    .exp-list li::before { content:'›'; position:absolute; left:0; color:var(--sea-light); }
+    .exp-list li.achievement::before { content:'✦'; color:var(--orange); font-size:.6rem; top:.3rem; }
+
+    /* Skills */
+    .skills-group { margin-bottom:1rem; }
+    .skills-group-label { font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; color:var(--text-muted); margin-bottom:.4rem; }
+    .tags { display:flex; flex-wrap:wrap; gap:.4rem; }
+    .tag {
+      font-size:.78rem; font-weight:500;
+      padding:.3rem .7rem; border-radius:8px;
+      background:rgba(228,238,240,.07);
+      border:1px solid rgba(228,238,240,.12);
+      color:var(--sand);
+      transition: all .2s;
+    }
+    .tag:hover { background:rgba(7,80,86,.3); border-color:var(--sea); }
+    .tag.highlight { background:rgba(255,91,4,.12); border-color:rgba(255,91,4,.3); color:var(--orange); }
+
+    /* Certifications / Projects */
+    .cert-item, .proj-item { margin-bottom:1rem; }
+    .cert-name, .proj-name { font-weight:600; font-size:.9rem; margin-bottom:.15rem; }
+    .cert-issuer, .proj-tech { color:var(--text-muted); font-size:.78rem; }
+
+    /* JSON Download */
+    .btn-download {
+      display:inline-flex; align-items:center; gap:.5rem;
+      background:rgba(7,80,86,.3); color:var(--sand);
+      border:1px solid rgba(7,80,86,.5);
+      font-family:'Syne',sans-serif; font-weight:700;
+      font-size:.78rem; letter-spacing:.06em; text-transform:uppercase;
+      padding:.5rem 1.1rem; border-radius:100px; cursor:pointer;
+      text-decoration:none; transition:all .2s;
+    }
+    .btn-download:hover { background:rgba(7,80,86,.6); border-color:var(--sea); }
+
+    /* Error */
+    #error-box {
+      display:none;
+      background:rgba(220,50,50,.1);
+      border:1px solid rgba(220,50,50,.3);
+      border-radius:12px;
+      padding:1.2rem 1.6rem;
+      color:#ff9090;
+      font-size:.9rem;
+      margin-top:1.5rem;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align:center;
+      color:var(--text-muted);
+      font-size:.78rem;
+      padding: 2rem;
+      border-top:1px solid rgba(228,238,240,.06);
+    }
+    footer a { color:var(--sea-light); text-decoration:none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-dot"></span>
+    Resume Parser
+  </div>
+  <span class="badge">Powered by Groq · Llama 3.3</span>
+</header>
+
+<main>
+  <!-- Upload UI -->
+  <div id="upload-section">
+    <h1 class="hero-title">Extract every detail<br/>from any <span>resume.</span></h1>
+    <p class="hero-sub">Upload a PDF, DOCX, or TXT resume and get a fully structured JSON profile in seconds — powered by Llama 3.3 on Groq.</p>
+
+    <div id="dropzone">
+      <span class="drop-icon">📄</span>
+      <p class="drop-title">Drop your resume here</p>
+      <p class="drop-sub">Supports <strong>PDF · DOCX · DOC · TXT</strong> &nbsp;·&nbsp; Max 10 MB</p>
+      <button class="btn-upload" onclick="document.getElementById('file-input').click()">
+        ↑ &nbsp;Browse File
+      </button>
+      <input type="file" id="file-input" accept=".pdf,.docx,.doc,.txt" />
+    </div>
+
+    <div id="error-box"></div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p class="loading-label">Analyzing resume…</p>
+    <p class="loading-steps" id="loading-step">Extracting text from file</p>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+    <div class="result-header">
+      <div>
+        <p class="result-title" id="result-name">Resume Parsed</p>
+        <div class="score-chips" id="score-chips"></div>
+      </div>
+      <div style="display:flex;gap:.7rem;align-items:center;flex-wrap:wrap">
+        <a id="btn-download-json" class="btn-download">⬇ Download JSON</a>
+        <button class="btn-reset" onclick="resetUI()">← Parse Another</button>
+      </div>
+    </div>
+
+    <div class="sections-grid" id="sections-grid"></div>
+  </div>
+</main>
+
+<footer>
+  Resume-parser &nbsp;·&nbsp; <a href="https://console.groq.com" target="_blank">Groq API</a> &nbsp;·&nbsp; Llama-3.3-70b-versatile
+</footer>
+
+<script>
+const API_BASE = "";   // same origin
+
+// ── Drag & Drop ──────────────────────────────────────────────────────────────
+const dz = document.getElementById("dropzone");
+dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("drag-over"); });
+dz.addEventListener("dragleave", () => dz.classList.remove("drag-over"));
+dz.addEventListener("drop", e => {
+  e.preventDefault(); dz.classList.remove("drag-over");
+  const f = e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+document.getElementById("file-input").addEventListener("change", e => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+// ── Upload & Parse ───────────────────────────────────────────────────────────
+let parsedData = null;
+
+const loadingSteps = [
+  "Extracting text from file…",
+  "Sending to Groq / Llama 3.3…",
+  "Parsing sections & entities…",
+  "Structuring JSON output…"
+];
+
+async function handleFile(file) {
+  showError("");
+  showSection("loading");
+
+  let stepIdx = 0;
+  const stepEl = document.getElementById("loading-step");
+  stepEl.textContent = loadingSteps[0];
+  const stepInterval = setInterval(() => {
+    stepIdx = (stepIdx + 1) % loadingSteps.length;
+    stepEl.textContent = loadingSteps[stepIdx];
+  }, 1800);
+
+  const fd = new FormData();
+  fd.append("file", file);
+
+  try {
+    const res = await fetch(`${API_BASE}/parse`, { method: "POST", body: fd });
+    clearInterval(stepInterval);
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || "Server error");
+    }
+    const json = await res.json();
+    parsedData = json.data;
+    renderResults(parsedData);
+    showSection("results");
+  } catch (err) {
+    clearInterval(stepInterval);
+    showSection("upload");
+    showError("❌ " + err.message);
+  }
+}
+
+// ── Render Results ────────────────────────────────────────────────────────────
+function renderResults(d) {
+  const meta = d.metadata || {};
+  const pi   = d.personal_info || {};
+
+  // Name
+  document.getElementById("result-name").textContent = pi.full_name || "Parsed Resume";
+
+  // Chips
+  const chips = document.getElementById("score-chips");
+  chips.innerHTML = "";
+  if (meta.seniority_level) chips.innerHTML += chip(meta.seniority_level, "chip-sea");
+  if (meta.primary_domain)  chips.innerHTML += chip(meta.primary_domain, "chip-sand");
+  if (meta.total_experience_years) chips.innerHTML += chip(meta.total_experience_years + " yrs exp", "chip-sand");
+  if (meta.resume_score)    chips.innerHTML += chip("Score " + meta.resume_score + "/100", "chip-orange");
+  if (meta.parsing_confidence) chips.innerHTML += chip("Confidence " + meta.parsing_confidence + "%", "chip-sea");
+
+  // Download
+  const blob = new Blob([JSON.stringify(d, null, 2)], {type:"application/json"});
+  const url  = URL.createObjectURL(blob);
+  const dl   = document.getElementById("btn-download-json");
+  dl.href = url;
+  dl.download = (pi.full_name || "resume").replace(/\s+/g, "_") + "_parsed.json";
+
+  // Build sections
+  const grid = document.getElementById("sections-grid");
+  grid.innerHTML = "";
+
+  grid.appendChild(buildPersonalCard(pi));
+  if (d.professional_summary) grid.appendChild(buildSummaryCard(d.professional_summary));
+  if (d.work_experience?.length) grid.appendChild(buildExperienceCard(d.work_experience));
+  if (d.education?.length) grid.appendChild(buildEducationCard(d.education));
+  if (d.skills) grid.appendChild(buildSkillsCard(d.skills));
+  if (d.certifications?.length) grid.appendChild(buildCertsCard(d.certifications));
+  if (d.projects?.length) grid.appendChild(buildProjectsCard(d.projects));
+  if (d.awards?.length) grid.appendChild(buildAwardsCard(d.awards));
+  if (d.languages_spoken?.length) grid.appendChild(buildLanguagesCard(d.languages_spoken));
+  if (meta.key_technologies?.length) grid.appendChild(buildKeyTechCard(meta.key_technologies));
+}
+
+function chip(label, cls) {
+  return `<span class="chip ${cls}">${label}</span>`;
+}
+
+function card(title, icon, content, full=false) {
+  const el = document.createElement("div");
+  el.className = "card" + (full ? " section-full" : "");
+  el.innerHTML = `<div class="card-title">${icon} ${title}</div>${content}`;
+  return el;
+}
+
+function buildPersonalCard(pi) {
+  const rows = [
+    ["Email",     pi.email],
+    ["Phone",     pi.phone],
+    ["Location",  pi.location],
+    ["LinkedIn",  pi.linkedin],
+    ["GitHub",    pi.github],
+    ["Portfolio", pi.portfolio],
+  ].filter(([,v])=>v);
+  const html = `<div class="personal-grid">` +
+    rows.map(([l,v]) => `<div class="info-row"><div class="info-label">${l}</div><div class="info-value">${v}</div></div>`).join("") +
+    `</div>`;
+  return card("Contact Info", "👤", html);
+}
+
+function buildSummaryCard(s) {
+  return card("Professional Summary", "✦", `<p style="font-size:.88rem;line-height:1.7;color:rgba(228,238,240,.85)">${s}</p>`, true);
+}
+
+function buildExperienceCard(exp) {
+  const html = exp.map(e => {
+    const resp = (e.responsibilities||[]).map(r=>`<li>${r}</li>`).join("");
+    const ach  = (e.achievements||[]).map(a=>`<li class="achievement">${a}</li>`).join("");
+    return `<div class="exp-item">
+      <div class="exp-title">${e.title||"Role"}</div>
+      <div class="exp-company">${e.company||""}</div>
+      <div class="exp-dates">${e.start_date||""} – ${e.is_current?"Present":(e.end_date||"")}&nbsp;&nbsp;${e.location?`· ${e.location}`:""}</div>
+      <ul class="exp-list">${resp}${ach}</ul>
+    </div>`;
+  }).join("");
+  return card("Work Experience", "💼", html, true);
+}
+
+function buildEducationCard(edu) {
+  const html = edu.map(e => `<div class="exp-item">
+    <div class="exp-title">${e.degree||""} ${e.field_of_study?`in ${e.field_of_study}`:""}</div>
+    <div class="exp-company">${e.institution||""}</div>
+    <div class="exp-dates">${e.start_date||""} – ${e.end_date||""} ${e.gpa?`· GPA ${e.gpa}`:""} ${e.honors?`· ${e.honors}`:""}</div>
+  </div>`).join("");
+  return card("Education", "🎓", html);
+}
+
+function buildSkillsCard(skills) {
+  const groups = [
+    ["Technical",    skills.technical,   false],
+    ["Frameworks",   skills.frameworks,  true],
+    ["Tools",        skills.tools,       false],
+    ["Databases",    skills.databases,   false],
+    ["Cloud",        skills.cloud,       true],
+    ["Languages",    skills.languages,   true],
+    ["Soft Skills",  skills.soft,        false],
+    ["Other",        skills.other,       false],
+  ].filter(([,v])=>v?.length);
+
+  const html = groups.map(([label, items, hl]) => `
+    <div class="skills-group">
+      <div class="skills-group-label">${label}</div>
+      <div class="tags">${items.map(s=>`<span class="tag${hl?" highlight":""}">${s}</span>`).join("")}</div>
+    </div>`).join("");
+  return card("Skills", "⚡", html, true);
+}
+
+function buildCertsCard(certs) {
+  const html = certs.map(c => `<div class="cert-item">
+    <div class="cert-name">${c.name}</div>
+    <div class="cert-issuer">${c.issuer||""} ${c.date?`· ${c.date}`:""}</div>
+  </div>`).join("");
+  return card("Certifications", "🏅", html);
+}
+
+function buildProjectsCard(projects) {
+  const html = projects.map(p => `<div class="proj-item">
+    <div class="proj-name">${p.name}</div>
+    <div style="font-size:.8rem;color:rgba(228,238,240,.75);margin:.2rem 0 .3rem;line-height:1.5">${p.description||""}</div>
+    <div class="proj-tech">${(p.technologies||[]).join(" · ")}</div>
+  </div>`).join("");
+  return card("Projects", "🚀", html, true);
+}
+
+function buildAwardsCard(awards) {
+  const html = awards.map(a => `<div class="cert-item">
+    <div class="cert-name">${a.title}</div>
+    <div class="cert-issuer">${a.issuer||""} ${a.date?`· ${a.date}`:""}</div>
+  </div>`).join("");
+  return card("Awards & Recognition", "🏆", html);
+}
+
+function buildLanguagesCard(langs) {
+  const html = `<div class="tags">${langs.map(l=>`<span class="tag">${l.language}${l.proficiency?` · ${l.proficiency}`:""}</span>`).join("")}</div>`;
+  return card("Languages Spoken", "🌐", html);
+}
+
+function buildKeyTechCard(techs) {
+  const html = `<div class="tags">${techs.map(t=>`<span class="tag highlight">${t}</span>`).join("")}</div>`;
+  return card("Key Technologies", "🔑", html);
+}
+
+// ── UI State ─────────────────────────────────────────────────────────────────
+function showSection(name) {
+  document.getElementById("upload-section").style.display = name==="upload" ? "block" : "none";
+  document.getElementById("loading").style.display = name==="loading" ? "flex" : "none";
+  document.getElementById("results").style.display = name==="results" ? "block" : "none";
+}
+
+function showError(msg) {
+  const el = document.getElementById("error-box");
+  el.style.display = msg ? "block" : "none";
+  el.textContent = msg;
+}
+
+function resetUI() {
+  parsedData = null;
+  document.getElementById("file-input").value = "";
+  showError("");
+  showSection("upload");
+}
+</script>
+</body>
+</html>
